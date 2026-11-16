@@ -31,8 +31,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit and integration tests
-        run: npm test
+      - name: Unit and integration tests with coverage
+        run: npm test -- --coverage --coverage.reporter=json-summary --coverage.reporter=text-summary
 
       - name: End-to-end tests
         run: |
@@ -47,6 +47,10 @@ jobs:
       # GitHub Pages has no SPA fallback: serve index.html for unknown routes.
       - name: SPA fallback
         run: cp dist/index.html dist/404.html
+
+      # Published with the site and read by the shields.io badge in the README.
+      - name: Coverage badge data
+        run: node scripts/coverage-badge.js coverage/coverage-summary.json dist/coverage-badge.json
 
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
