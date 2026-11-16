@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { api } from '../api';
 
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 describe('api', () => {
   beforeEach(() => {
@@ -90,7 +90,7 @@ describe('api', () => {
         json: async () => {
           throw new Error('Invalid JSON');
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(api.get('/test')).rejects.toThrow('Unknown error');
     });

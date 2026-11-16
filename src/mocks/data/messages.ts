@@ -3,26 +3,26 @@ import type { Message, CreateMessageRequest } from '@/types/chat';
 export const mockMessages: Message[] = [
   {
     _id: '1',
-    message: 'Cool! It&#39;s super easy to vote.',
+    message: 'Morning! The release notes draft is in the shared folder.',
     author: 'John',
     createdAt: new Date('2026-02-08T06:14:44Z').toISOString(),
   },
   {
     _id: '2',
     message:
-      'Could everyone vote by tomorrow? Then we can lock in the restaurant reservation.',
+      'Could everyone review it by tomorrow? Then we can publish on Thursday.',
     author: 'Luka',
     createdAt: new Date('2026-02-08T07:16:44Z').toISOString(),
   },
   {
     _id: '3',
-    message: "Done! Love how it shows everyone's availability at a glance.",
+    message: 'Done! I left two small comments on the migration section.',
     author: 'Maddie',
     createdAt: new Date('2026-02-08T08:19:14Z').toISOString(),
   },
   {
     _id: '4',
-    message: "Just submitted my preferences. Can't wait for the lunch! 😊",
+    message: 'Reading it now. Looks good so far 😊',
     author: 'Nina',
     createdAt: new Date('2026-02-08T09:21:44Z').toISOString(),
   },
