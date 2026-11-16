@@ -1,1 +1,0 @@
-{"root":["./e2e/fixtures/mockapi.ts","./e2e/pages/chatpage.page.ts","./e2e/tests/chatpage.spec.ts","./playwright.config.ts"],"version":"5.9.3"}
