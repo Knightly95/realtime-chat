@@ -1,64 +1,83 @@
-# Simple Chat App — Quickstart
+# Realtime Chat
 
-This repository is a small React + TypeScript app bootstrapped with Vite.
+[![CI & Deploy](https://github.com/Knightly95/realtime-chat/actions/workflows/deploy.yml/badge.svg)](https://github.com/Knightly95/realtime-chat/actions/workflows/deploy.yml)
 
-## Prerequisites
+**[▶ Live demo](https://knightly95.github.io/realtime-chat/)**: runs entirely in your browser. No sign-up or backend is needed.
 
-You must have Node.js installed to use this project. This project was created with Node.js v24.12.0. Some older Node.js versions may cause errors or incompatibilities.
+> **Background:** I built this project as a take-home for a frontend technical assessment in a hiring process, then moved it to my personal account and replaced the original backend with a built-in mock API. The commit history is the original one.
 
-Quick steps to get running locally:
+A small group-chat client built with React and TypeScript. It focuses on a clean API layer, predictable state, and tests at every level: unit, integration and end-to-end.
 
-## Dependencies
+## Features
 
-To run this app first make sure you install the projects dependencies running the following command upon cloning the repository.
+- **Message list and composer:** your own messages are aligned and styled differently from other people's, with timestamps. Enter sends; Shift+Enter adds a new line.
+- **Auto-refresh toggle:** the Wi-Fi button in the top-right corner polls for new messages every 5 seconds. It stands in for a WebSocket subscription, which the original API did not offer.
+- **Simulated teammates:** in the demo, another participant replies a few seconds after you send a message. Turn auto-refresh on to see the reply arrive without reloading.
+- **Persistent demo data:** messages are saved in your browser, so they survive a reload and are shared between tabs.
+- **Error handling:** failed requests show a clear message and never crash the page.
+
+## Tech stack
+
+React 19 · TypeScript · Vite · Zustand · Material UI · React Router · MSW · Vitest + React Testing Library · Playwright
+
+## Getting started
+
+Prerequisite: Node.js 22 or newer.
 
 ```bash
 npm install
+npm run dev        # http://localhost:5173
 ```
 
-## Run backend server server
+| Script                  | What it does                            |
+| ----------------------- | --------------------------------------- |
+| `npm run dev`           | Start the dev server                    |
+| `npm run build`         | Type-check and build for production     |
+| `npm run preview`       | Serve the production build locally      |
+| `npm run lint`          | Run ESLint                              |
+| `npm test`              | Run unit and integration tests (Vitest) |
+| `npm run test:coverage` | Run the tests with a coverage report    |
+| `npm run e2e`           | Run the end-to-end tests (Playwright)   |
 
-Please note that this project has a backend dependency on [This repo](https://example.com/chat-api), api that has to be up and running for the front end to work.
+## API
 
-Follow the instructions of the repo and visit <http://localhost:3000/health> in your browser to make sure its working
+The app uses two endpoints:
 
-## Open the app
+| Method | Path               | Description                                                     |
+| ------ | ------------------ | --------------------------------------------------------------- |
+| GET    | `/api/v1/messages` | List messages, oldest first. Query: `after`, `before`, `limit`  |
+| POST   | `/api/v1/messages` | Create a message from `{ "message": string, "author": string }` |
 
-To run both frontend app please run:
+### Mock API (default)
 
-```bash
-npm run dev
+By default, requests are answered inside the browser by [MSW](https://mswjs.io/). The code is in [`src/mocks`](src/mocks):
+
+- `handlers.ts`: the two endpoints, input validation and the simulated teammate replies
+- `store.ts`: persistence in `localStorage`
+- `data/messages.ts`: the seed conversation
+
+To reset the demo, run `localStorage.removeItem('realtime-chat:mock-messages:v1')` in the browser console and reload.
+
+### Using a real backend
+
+Create a `.env.local` file:
+
+```dotenv
+VITE_API_URL=https://your-api.example.com/api/v1
+VITE_API_TOKEN=your-token   # sent as a Bearer token
 ```
 
-And visit <http://localhost:5173>
+When `VITE_API_URL` is set, the mock API is not started.
 
-## Multi-User Simulation
+## Testing
 
-The app simulates multiple users by generating a unique user identity for each browser/window using localStorage.
+- **Unit and integration** (Vitest, React Testing Library): components, the store, the API layer, utilities and the mock API's filtering logic.
+- **End-to-end** (Playwright): the chat page through a page object, with the network stubbed so the tests are deterministic.
 
-**To test multi-user functionality:**
+## Deployment
 
-1. Open the app in your normal browser window → you'll be assigned a random user (e.g., "Alice123")
-2. Open the app in a private/incognito window → you'll be assigned a different user (e.g., "Bob456")
-3. Send a message from either window
-4. **Click the WiFi toggle button** in the top-right corner to enable auto-refresh
-5. Messages from other users will automatically appear without manual reloads
+Every push to `main` is linted, tested (unit and end-to-end), built and deployed to GitHub Pages by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
-## WebSocket Simulation
+## Documentation
 
-Since this assignment does not include WebSocket support, the app includes a **WebSocket simulator toggle** (WiFi icon in the top-right corner):
-
-- **WiFi icon (green)**: Auto-refresh is **enabled** - the app polls the `getMessages` endpoint every 5 seconds to fetch new messages
-- **WiFi-off icon (gray)**: Auto-refresh is **disabled** - you need to manually reload the page to see new messages
-
-When enabled, this simulates real-time WebSocket behavior by automatically updating the message store with new messages from other users. In a production environment with actual WebSocket integration, this polling mechanism would be replaced with a subscription to server-sent message events for true real-time updates.
-
-## Useful Scripts
-
-- `npm run dev` — start dev server
-- `npm run build` — run TypeScript build and Vite production build
-- `npm run preview` — preview the production build locally
-- `npm run lint` — run ESLint checks
-- `npm run test` — run tests with Vitest UI
-- `npm run test:coverage` — run tests with coverage report
-- `npm run e2e` — run Playwright E2E tests
+- [`architecture-decision-record.md`](architecture-decision-record.md): why Zustand, Material UI, MSW, Vitest and Playwright were chosen, and the trade-offs considered.

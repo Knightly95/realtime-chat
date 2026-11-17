@@ -7,7 +7,13 @@ describe('MessageList', () => {
   const mockScrollRef = { current: null };
 
   it('displays empty state when there are no messages', () => {
-    render(<MessageList messages={[]} scrollRef={mockScrollRef} />);
+    render(
+      <MessageList
+        messages={[]}
+        scrollRef={mockScrollRef}
+        currentUser="Tester"
+      />
+    );
 
     expect(
       screen.getByText('No messages yet. Start a conversation!')
@@ -30,7 +36,13 @@ describe('MessageList', () => {
       },
     ];
 
-    render(<MessageList messages={messages} scrollRef={mockScrollRef} />);
+    render(
+      <MessageList
+        messages={messages}
+        scrollRef={mockScrollRef}
+        currentUser="Tester"
+      />
+    );
 
     expect(screen.getByText('Hello World')).toBeTruthy();
     expect(screen.getByText('Test message')).toBeTruthy();

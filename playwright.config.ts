@@ -26,6 +26,8 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
+    // E2E tests stub the network with page.route, so the in-browser mock API is off.
+    env: { VITE_API_URL: 'http://localhost:3000/api/v1' },
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

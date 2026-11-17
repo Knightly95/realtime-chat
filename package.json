@@ -1,5 +1,5 @@
 {
-  "name": "simple-chat-app",
+  "name": "realtime-chat",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -64,6 +64,11 @@
     ],
     "*.{md,json,css}": [
       "prettier --write"
+    ]
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
     ]
   }
 }
