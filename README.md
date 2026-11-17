@@ -1,12 +1,19 @@
 # Realtime Chat
 
 [![CI & Deploy](https://github.com/Knightly95/realtime-chat/actions/workflows/deploy.yml/badge.svg)](https://github.com/Knightly95/realtime-chat/actions/workflows/deploy.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fknightly95.github.io%2Frealtime-chat%2Fcoverage-badge.json)](#testing)
 
 **[▶ Live demo](https://knightly95.github.io/realtime-chat/)**: runs entirely in your browser. No sign-up or backend is needed.
 
 > **Background:** I built this project as a take-home for a frontend technical assessment in a hiring process, then moved it to my personal account and replaced the original backend with a built-in mock API. The commit history is the original one.
 
 A small group-chat client built with React and TypeScript. It focuses on a clean API layer, predictable state, and tests at every level: unit, integration and end-to-end.
+
+## Screenshot
+
+[![Chat page: a sent message on the right and a reply from a simulated teammate arriving below it](docs/screenshots/chat.png)](docs/screenshots/chat.png)
+
+Your messages are on the right. With auto-refresh on (the green button), a simulated teammate's reply arrives without a reload.
 
 ## Features
 
@@ -74,10 +81,14 @@ When `VITE_API_URL` is set, the mock API is not started.
 - **Unit and integration** (Vitest, React Testing Library): components, the store, the API layer, utilities and the mock API's filtering logic.
 - **End-to-end** (Playwright): the chat page through a page object, with the network stubbed so the tests are deterministic.
 
+CI measures line coverage of the unit and integration tests on every push to `main` and publishes the number shown in the badge above.
+
 ## Deployment
 
 Every push to `main` is linted, tested (unit and end-to-end), built and deployed to GitHub Pages by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
 ## Documentation
 
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): setup, checks, conventions and how to propose a change.
+- [`AGENTS.md`](AGENTS.md): commands, rules and guardrails for AI coding agents.
 - [`architecture-decision-record.md`](architecture-decision-record.md): why Zustand, Material UI, MSW, Vitest and Playwright were chosen, and the trade-offs considered.
