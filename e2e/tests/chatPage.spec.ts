@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/mockAPI';
 import { ChatPagePOM } from '../pages/ChatPage.page';
+import { mockMessages } from '@/mocks/data/messages';
 
 test.describe('ChatPage E2E Tests', () => {
   let chatPage: ChatPagePOM;
@@ -25,6 +26,22 @@ test.describe('ChatPage E2E Tests', () => {
     await chatPage.typeMessage('   ');
     const isDisabled = await chatPage.isSendButtonDisabled();
     expect(isDisabled).toBeTruthy();
+  });
+
+  test("shows a teammate's reply without a reload", async ({ page }) => {
+    const reply = {
+      _id: 'reply-1',
+      message: 'Live reply from a teammate',
+      author: 'Nina',
+      createdAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    // From now on the server also returns a new reply.
+    await page.route('**/api/v1/messages**', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      await route.fulfill({ json: [...mockMessages, reply] });
+    });
+
+    await expect(page.getByText(reply.message)).toBeVisible({ timeout: 5000 });
   });
 
   test('should send message when send button is clicked', async () => {

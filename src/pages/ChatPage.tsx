@@ -15,27 +15,36 @@ import { getCurrentUser } from '@/utils/message';
 
 export default function ChatPage() {
   const [inputValue, setInputValue] = useState('');
-  const [simulateWebSocket, setSimulateWebSocket] = useState(false);
+  // On by default: replies should appear without a reload.
+  const [liveUpdates, setLiveUpdates] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = getCurrentUser();
   const messages = useMessageStore((state) => state.messages);
   const fetchMessages = useMessageStore((state) => state.fetchMessages);
+  const fetchNewMessages = useMessageStore((state) => state.fetchNewMessages);
   const sendMessage = useMessageStore((state) => state.sendMessage);
 
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Simulate WebSocket with polling
+  // Live updates: the API has no push channel, so check for new messages
+  // every few seconds. Skip the check while the tab is hidden, and catch up
+  // as soon as it is shown again.
   useEffect(() => {
-    if (!simulateWebSocket) return;
+    if (!liveUpdates) return;
 
-    const interval = setInterval(() => {
-      fetchMessages();
-    }, WEBSOCKET_CONFIG.POLLING_INTERVAL_MS);
+    const check = () => {
+      if (document.visibilityState === 'visible') fetchNewMessages();
+    };
+    const interval = setInterval(check, WEBSOCKET_CONFIG.POLLING_INTERVAL_MS);
+    document.addEventListener('visibilitychange', check);
 
-    return () => clearInterval(interval);
-  }, [simulateWebSocket, fetchMessages]);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [liveUpdates, fetchNewMessages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -74,8 +83,8 @@ export default function ChatPage() {
   return (
     <Box sx={LAYOUT_STYLES.container}>
       <WebSocketToggle
-        enabled={simulateWebSocket}
-        onToggle={() => setSimulateWebSocket(!simulateWebSocket)}
+        enabled={liveUpdates}
+        onToggle={() => setLiveUpdates(!liveUpdates)}
       />
       <MessageList
         messages={messages}

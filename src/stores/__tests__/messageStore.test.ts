@@ -85,6 +85,62 @@ describe('messageStore', () => {
     });
   });
 
+  describe('fetchNewMessages', () => {
+    const message = (id: string, minute: number): Message => ({
+      _id: id,
+      message: `Message ${id}`,
+      author: 'Nina',
+      createdAt: new Date(Date.UTC(2026, 10, 18, 10, minute)).toISOString(),
+    });
+
+    it('adds only the messages it has not seen, in time order', async () => {
+      useMessageStore.setState({
+        messages: [message('1', 0), message('3', 2)],
+      });
+      vi.mocked(messageService.getMessages).mockResolvedValue([
+        message('1', 0),
+        message('2', 1),
+        message('3', 2),
+        message('4', 3),
+      ]);
+
+      await useMessageStore.getState().fetchNewMessages();
+
+      expect(useMessageStore.getState().messages.map((m) => m._id)).toEqual([
+        '1',
+        '2',
+        '3',
+        '4',
+      ]);
+    });
+
+    it('keeps the same list when nothing is new, so nothing re-renders', async () => {
+      const messages = [message('1', 0)];
+      useMessageStore.setState({ messages });
+      vi.mocked(messageService.getMessages).mockResolvedValue([
+        message('1', 0),
+      ]);
+
+      await useMessageStore.getState().fetchNewMessages();
+
+      expect(useMessageStore.getState().messages).toBe(messages);
+    });
+
+    it('ignores a failed check and keeps the messages', async () => {
+      const messages = [message('1', 0)];
+      useMessageStore.setState({ messages });
+      vi.mocked(messageService.getMessages).mockRejectedValue(
+        new Error('offline')
+      );
+
+      await useMessageStore.getState().fetchNewMessages();
+
+      const state = useMessageStore.getState();
+      expect(state.messages).toBe(messages);
+      expect(state.error).toBeNull();
+    });
+  });
+
   describe('sendMessage', () => {
     it('sends message successfully and adds to state', async () => {
       const newMessage: Message = {

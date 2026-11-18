@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import ChatPage from '../ChatPage';
@@ -18,8 +18,11 @@ const createMockStore = (
   setError: vi.fn(),
   setLoading: vi.fn(),
   fetchMessages: vi.fn(),
+  fetchNewMessages,
   sendMessage: vi.fn(),
 });
+
+const fetchNewMessages = vi.fn();
 
 vi.mock('@/stores/messageStore', () => ({
   useMessageStore: (selector: (state: MessageStore) => unknown) => {
@@ -46,6 +49,48 @@ const renderChatPage = () => {
 describe('ChatPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('live updates', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('checks for new messages every 2 seconds without being switched on', () => {
+      renderChatPage();
+      expect(fetchNewMessages).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(2000);
+      expect(fetchNewMessages).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(4000);
+      expect(fetchNewMessages).toHaveBeenCalledTimes(3);
+    });
+
+    it('stops checking when paused', () => {
+      renderChatPage();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Pause live updates' })
+      );
+
+      vi.advanceTimersByTime(6000);
+      expect(fetchNewMessages).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: 'Resume live updates' })
+      ).toBeTruthy();
+    });
+
+    it('skips checks while the tab is hidden', () => {
+      const visibility = vi.spyOn(document, 'visibilityState', 'get');
+      visibility.mockReturnValue('hidden');
+      renderChatPage();
+
+      vi.advanceTimersByTime(6000);
+      expect(fetchNewMessages).not.toHaveBeenCalled();
+
+      visibility.mockReturnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(fetchNewMessages).toHaveBeenCalledTimes(1);
+      visibility.mockRestore();
+    });
   });
 
   it('renders message list and input', () => {

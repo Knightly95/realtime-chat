@@ -1,7 +1,8 @@
 import type { Message } from '@/types/chat';
 import { mockMessages } from './data/messages';
 
-const STORAGE_KEY = 'realtime-chat:mock-messages:v1';
+// v2: earlier versions could store a message and its reply under the same id.
+const STORAGE_KEY = 'realtime-chat:mock-messages:v2';
 
 /**
  * Message store for the in-browser mock API.

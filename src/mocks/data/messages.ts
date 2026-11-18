@@ -28,8 +28,14 @@ export const mockMessages: Message[] = [
   },
 ];
 
+let sequence = 0;
+
+/**
+ * The time alone is not unique: a message and the teammate reply it triggers
+ * are created in the same millisecond, and the chat tells messages apart by id.
+ */
 export const createMockMessage = (data: CreateMessageRequest): Message => ({
-  _id: `${Date.now()}`,
+  _id: `${Date.now()}-${++sequence}`,
   message: data.message,
   author: data.author,
   createdAt: new Date().toISOString(),

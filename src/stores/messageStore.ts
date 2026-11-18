@@ -20,8 +20,16 @@ interface MessageStore {
   setLoading: (loading: boolean) => void;
 
   fetchMessages: (params?: GetMessagesParams) => Promise<void>;
+  /**
+   * Adds messages that arrived since the last fetch, such as a teammate's
+   * reply. Messages already shown are kept as they are, so nothing re-renders
+   * or scrolls when there is nothing new.
+   */
+  fetchNewMessages: () => Promise<void>;
   sendMessage: (data: CreateMessageRequest) => Promise<void>;
 }
+
+const time = (message: Message) => new Date(message.createdAt).getTime();
 
 export type { MessageStore };
 
@@ -52,6 +60,27 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
         ERROR_MESSAGES.FETCH_MESSAGES_FAILED
       );
       set({ error: errorMessage, loading: false });
+    }
+  },
+
+  fetchNewMessages: async () => {
+    try {
+      // The latest page, not "after my last message": a reply that became
+      // visible just before the visitor sent another message is older than
+      // that message and would be skipped.
+      const latest = await messageService.getMessages({
+        limit: API_CONFIG.DEFAULTS.MESSAGE_LIMIT,
+      });
+      const known = new Set(get().messages.map((message) => message._id));
+      const fresh = latest.filter((message) => !known.has(message._id));
+      if (fresh.length === 0) return;
+      set((state) => ({
+        messages: [...state.messages, ...fresh].sort(
+          (a, b) => time(a) - time(b)
+        ),
+      }));
+    } catch {
+      // A failed background check is retried on the next one.
     }
   },
 

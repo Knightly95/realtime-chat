@@ -3,7 +3,7 @@ import type { Message } from '@/types/chat';
 import { mockMessages } from '../data/messages';
 import { appendMessage, readMessages, resetMessages } from '../store';
 
-const STORAGE_KEY = 'realtime-chat:mock-messages:v1';
+const STORAGE_KEY = 'realtime-chat:mock-messages:v2';
 
 const newMessage: Message = {
   _id: 'new',

@@ -16,7 +16,8 @@ export const UI_CONSTANTS = {
 } as const;
 
 export const WEBSOCKET_CONFIG = {
-  POLLING_INTERVAL_MS: 5000,
+  /** How often to check for new messages while live updates are on. */
+  POLLING_INTERVAL_MS: 2000,
 } as const;
 
 export const STORAGE_KEYS = {

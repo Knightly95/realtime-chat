@@ -13,13 +13,13 @@ A small group-chat client built with React and TypeScript. It focuses on a clean
 
 [![Chat page: a sent message on the right and a reply from a simulated teammate arriving below it](docs/screenshots/chat.png)](docs/screenshots/chat.png)
 
-Your messages are on the right. With auto-refresh on (the green button), a simulated teammate's reply arrives without a reload.
+Your messages are on the right. A few seconds after you send one, a simulated teammate's reply arrives without a reload.
 
 ## Features
 
 - **Message list and composer:** your own messages are aligned and styled differently from other people's, with timestamps. Enter sends; Shift+Enter adds a new line.
-- **Auto-refresh toggle:** the Wi-Fi button in the top-right corner polls for new messages every 5 seconds. It stands in for a WebSocket subscription, which the original API did not offer.
-- **Simulated teammates:** in the demo, another participant replies a few seconds after you send a message. Turn auto-refresh on to see the reply arrive without reloading.
+- **Live updates:** the chat checks for new messages every 2 seconds and adds only the new ones, so the list doesn't jump while you read. Checks pause while the tab is hidden and catch up when it is shown again. The Wi-Fi button in the top-right corner pauses and resumes them. Polling stands in for a WebSocket subscription, which the original API did not offer.
+- **Simulated teammates:** in the demo, another participant replies with a canned line 1.5 to 4 seconds after you send a message. There is no AI: the replies are picked at random by the in-browser mock API.
 - **Persistent demo data:** messages are saved in your browser, so they survive a reload and are shared between tabs.
 - **Error handling:** failed requests show a clear message and never crash the page.
 
@@ -110,7 +110,7 @@ Since November 2026 I maintain this repo with an AI coding agent (Claude Code). 
 
 - The agent follows [AGENTS.md](AGENTS.md): commands, conventions and what it must not do.
 - Every change goes through a pull request. I read the diff and merge it myself; nothing is pushed straight to `main`.
-- CI runs lint, the 59 unit and integration tests and the Playwright tests on every pull request, plus the Lighthouse and bundle-size checks.
+- CI runs lint, the 66 unit and integration tests and the 10 Playwright tests on every pull request, plus the Lighthouse and bundle-size checks.
 
 **Where it needed correcting**
 

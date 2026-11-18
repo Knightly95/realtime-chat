@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { Message } from '@/types/chat';
 import { filterMessages, visibleMessages } from '../handlers';
+import { createMockMessage } from '../data/messages';
 
 const message = (id: string, createdAt: string): Message => ({
   _id: id,
@@ -44,5 +45,19 @@ describe('mock API: visibleMessages', () => {
   it('hides scheduled replies until their time comes', () => {
     const now = new Date('2026-01-02T12:00:00Z').getTime();
     expect(ids(visibleMessages(messages, now))).toEqual(['a', 'b']);
+  });
+});
+
+describe('mock API: createMockMessage', () => {
+  it('gives messages made in the same millisecond different ids', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    const sent = createMockMessage({ message: 'Hello', author: 'Eve' });
+    const reply = createMockMessage({
+      message: 'Got it, thanks!',
+      author: 'Nina',
+    });
+    vi.restoreAllMocks();
+
+    expect(sent._id).not.toBe(reply._id);
   });
 });
