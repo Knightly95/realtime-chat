@@ -31,3 +31,7 @@ playwright-report
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Lighthouse CI
+.lighthouseci
+lighthouse-report
