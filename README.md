@@ -96,6 +96,26 @@ The Lighthouse report is attached to each CI run.
 
 Every push to `main` is linted, tested (unit and end-to-end), built and deployed to GitHub Pages by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
+## How AI was used
+
+Since November 2026 I maintain this repo with an AI coding agent (Claude Code). The original assessment code is described in the background note at the top.
+
+**What the agent did**
+
+- Replaced the original backend with an in-browser mock API, so the live demo runs on its own.
+- Added five tests for the mock API's store (line coverage from 79.6% to 86.6%), CI and the GitHub Pages deploy.
+- Added the screenshot, `CONTRIBUTING.md`, `AGENTS.md`, templates, the coverage badge and the Lighthouse and bundle-size checks, and fixed a contrast problem Lighthouse found.
+
+**How it is checked**
+
+- The agent follows [AGENTS.md](AGENTS.md): commands, conventions and what it must not do.
+- Every change goes through a pull request. I read the diff and merge it myself; nothing is pushed straight to `main`.
+- CI runs lint, the 59 unit and integration tests and the Playwright tests on every pull request, plus the Lighthouse and bundle-size checks.
+
+**Where it needed correcting**
+
+The first Lighthouse setup scored the app's error page instead of the chat: it opened `/index.html`, which is not a route. I caught it by reading the report, not just the score, and pointed it at `/`.
+
 ## Documentation
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): setup, checks, conventions and how to propose a change.
