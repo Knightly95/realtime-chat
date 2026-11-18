@@ -9,11 +9,13 @@ import { appendMessage, readMessages } from './store';
  *
  *   GET  /messages?after=<ISO date>&before=<ISO date>&limit=<n>
  *   POST /messages  { message, author }
+ *   GET  /typing    { typing: string[] }, who is writing a reply right now
  *
  * Requests are intercepted by MSW, so the app talks HTTP exactly as it would
  * to a real server. Set VITE_API_URL to use a real backend instead.
  */
 const MESSAGES_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MESSAGES}`;
+const TYPING_URL = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TYPING}`;
 
 const TEAMMATES = ['John', 'Luka', 'Maddie', 'Nina'];
 const REPLIES = [
@@ -24,7 +26,8 @@ const REPLIES = [
   'Nice one 👍',
   'Can you share a bit more detail?',
 ];
-const REPLY_DELAY_MS = { min: 1500, max: 4000 };
+// Long enough to see the typing dots, short enough not to wait.
+const REPLY_DELAY_MS = { min: 2000, max: 4500 };
 
 const pick = <T>(items: T[]): T =>
   items[Math.floor(Math.random() * items.length)];
@@ -33,7 +36,8 @@ const pick = <T>(items: T[]): T =>
  * Simulates another participant answering, so the demo feels alive.
  *
  * The reply is stored right away with a timestamp a few seconds in the future
- * and stays hidden until then. Unlike a timer, this survives a page reload.
+ * and stays hidden until then, while its author shows as typing. Unlike a
+ * timer, this survives a page reload.
  */
 function scheduleTeammateReply(): void {
   const delay =
@@ -48,6 +52,12 @@ function scheduleTeammateReply(): void {
 /** Messages whose time has come; scheduled replies stay hidden until then. */
 export function visibleMessages(messages: Message[], now = Date.now()) {
   return messages.filter((m) => new Date(m.createdAt).getTime() <= now);
+}
+
+/** Authors of replies that are scheduled but not shown yet, each once. */
+export function typingAuthors(messages: Message[], now = Date.now()) {
+  const pending = messages.filter((m) => new Date(m.createdAt).getTime() > now);
+  return [...new Set(pending.map((m) => m.author))];
 }
 
 export function filterMessages(
@@ -78,6 +88,10 @@ export const handlers = [
       filterMessages(visibleMessages(readMessages()), searchParams)
     );
   }),
+
+  http.get(TYPING_URL, () =>
+    HttpResponse.json({ typing: typingAuthors(readMessages()) })
+  ),
 
   http.post(MESSAGES_URL, async ({ request }) => {
     const data = (await request.json()) as Partial<CreateMessageRequest>;

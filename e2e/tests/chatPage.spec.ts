@@ -44,6 +44,25 @@ test.describe('ChatPage E2E Tests', () => {
     await expect(page.getByText(reply.message)).toBeVisible({ timeout: 5000 });
   });
 
+  test('shows typing dots while a teammate writes, and hides them after', async ({
+    page,
+  }) => {
+    await page.route('**/api/v1/typing', (route) =>
+      route.fulfill({ json: { typing: ['Nina'] } })
+    );
+    await expect(page.getByTestId('typing-indicator')).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByRole('status')).toHaveText('Nina is typing');
+
+    await page.route('**/api/v1/typing', (route) =>
+      route.fulfill({ json: { typing: [] } })
+    );
+    await expect(page.getByTestId('typing-indicator')).toBeHidden({
+      timeout: 5000,
+    });
+  });
+
   test('should send message when send button is clicked', async () => {
     const initialCount = await chatPage.getMessageCount();
     const testMessage = `Test message ${Date.now()}`;

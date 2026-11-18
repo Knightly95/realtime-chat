@@ -15,6 +15,12 @@ export const messageService = {
     });
   },
 
+  /** Names of the people writing a message right now. */
+  getTyping: async (): Promise<string[]> => {
+    const data = await api.get(API_CONFIG.ENDPOINTS.TYPING);
+    return Array.isArray(data?.typing) ? data.typing : [];
+  },
+
   createMessage: async (data: CreateMessageRequest): Promise<Message> => {
     return api.post(API_CONFIG.ENDPOINTS.MESSAGES, data);
   },

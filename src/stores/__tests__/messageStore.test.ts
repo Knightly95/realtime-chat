@@ -12,7 +12,10 @@ describe('messageStore', () => {
       messages: [],
       loading: false,
       error: null,
+      typing: [],
+      connectionLost: false,
     });
+    vi.mocked(messageService.getTyping).mockResolvedValue([]);
   });
 
   describe('fetchMessages', () => {
@@ -138,6 +141,69 @@ describe('messageStore', () => {
       const state = useMessageStore.getState();
       expect(state.messages).toBe(messages);
       expect(state.error).toBeNull();
+    });
+  });
+
+  describe('fetchNewMessages: typing and connection', () => {
+    it('reports who is typing, and stops when they are done', async () => {
+      vi.mocked(messageService.getMessages).mockResolvedValue([]);
+      vi.mocked(messageService.getTyping).mockResolvedValue(['Nina']);
+      await useMessageStore.getState().fetchNewMessages();
+      expect(useMessageStore.getState().typing).toEqual(['Nina']);
+
+      vi.mocked(messageService.getTyping).mockResolvedValue([]);
+      await useMessageStore.getState().fetchNewMessages();
+      expect(useMessageStore.getState().typing).toEqual([]);
+    });
+
+    it('keeps the same typing list when it has not changed', async () => {
+      const typing = ['Nina'];
+      useMessageStore.setState({ typing });
+      vi.mocked(messageService.getMessages).mockResolvedValue([]);
+      vi.mocked(messageService.getTyping).mockResolvedValue(['Nina']);
+
+      await useMessageStore.getState().fetchNewMessages();
+
+      expect(useMessageStore.getState().typing).toBe(typing);
+    });
+
+    it('still adds messages when the backend has no typing endpoint', async () => {
+      vi.mocked(messageService.getMessages).mockResolvedValue([
+        {
+          _id: '1',
+          message: 'Hi',
+          author: 'Nina',
+          createdAt: '2026-11-18T10:00:00Z',
+        },
+      ]);
+      vi.mocked(messageService.getTyping).mockRejectedValue(new Error('404'));
+
+      await useMessageStore.getState().fetchNewMessages();
+
+      const state = useMessageStore.getState();
+      expect(state.messages).toHaveLength(1);
+      expect(state.typing).toEqual([]);
+      expect(state.connectionLost).toBe(false);
+    });
+
+    it('flags a lost connection, and clears it when a check succeeds', async () => {
+      vi.mocked(messageService.getMessages).mockRejectedValue(
+        new Error('down')
+      );
+      await useMessageStore.getState().fetchNewMessages();
+      expect(useMessageStore.getState().connectionLost).toBe(true);
+
+      vi.mocked(messageService.getMessages).mockResolvedValue([]);
+      await useMessageStore.getState().fetchNewMessages();
+      expect(useMessageStore.getState().connectionLost).toBe(false);
+    });
+
+    it('resetLiveState clears typing and the warning', () => {
+      useMessageStore.setState({ typing: ['Nina'], connectionLost: true });
+      useMessageStore.getState().resetLiveState();
+      const state = useMessageStore.getState();
+      expect(state.typing).toEqual([]);
+      expect(state.connectionLost).toBe(false);
     });
   });
 

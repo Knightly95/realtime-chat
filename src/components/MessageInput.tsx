@@ -36,7 +36,8 @@ function MessageInputComponent({
           variant="outlined"
           size="small"
           slotProps={{
-            input: {
+            // On the text box itself, so assistive tech announces it.
+            htmlInput: {
               'aria-label': 'Message input field',
             },
           }}

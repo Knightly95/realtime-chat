@@ -12,6 +12,10 @@ interface MessageStore {
   messages: Message[];
   loading: boolean;
   error: string | null;
+  /** People writing a message right now, from the last live check. */
+  typing: string[];
+  /** The last live check failed; the next one retries. */
+  connectionLost: boolean;
 
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
@@ -22,14 +26,18 @@ interface MessageStore {
   fetchMessages: (params?: GetMessagesParams) => Promise<void>;
   /**
    * Adds messages that arrived since the last fetch, such as a teammate's
-   * reply. Messages already shown are kept as they are, so nothing re-renders
-   * or scrolls when there is nothing new.
+   * reply, and updates who is typing. Messages already shown are kept as they
+   * are, so nothing re-renders or scrolls when there is nothing new.
    */
   fetchNewMessages: () => Promise<void>;
+  /** Clears what live checks found, for when they are paused. */
+  resetLiveState: () => void;
   sendMessage: (data: CreateMessageRequest) => Promise<void>;
 }
 
 const time = (message: Message) => new Date(message.createdAt).getTime();
+const sameNames = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((name, i) => name === b[i]);
 
 export type { MessageStore };
 
@@ -37,6 +45,8 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
   messages: [],
   loading: false,
   error: null,
+  typing: [],
+  connectionLost: false,
 
   setMessages: (messages) => set({ messages }),
   addMessage: (message) =>
@@ -64,25 +74,42 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
   },
 
   fetchNewMessages: async () => {
-    try {
+    const [latest, typing] = await Promise.allSettled([
       // The latest page, not "after my last message": a reply that became
       // visible just before the visitor sent another message is older than
       // that message and would be skipped.
-      const latest = await messageService.getMessages({
-        limit: API_CONFIG.DEFAULTS.MESSAGE_LIMIT,
-      });
-      const known = new Set(get().messages.map((message) => message._id));
-      const fresh = latest.filter((message) => !known.has(message._id));
-      if (fresh.length === 0) return;
-      set((state) => ({
-        messages: [...state.messages, ...fresh].sort(
+      messageService.getMessages({ limit: API_CONFIG.DEFAULTS.MESSAGE_LIMIT }),
+      messageService.getTyping(),
+    ]);
+    const state = get();
+    const patch: Partial<MessageStore> = {};
+
+    // Typing is optional: a backend without it simply shows no dots.
+    const typingNow =
+      typing.status === 'fulfilled' && Array.isArray(typing.value)
+        ? typing.value
+        : [];
+    if (!sameNames(typingNow, state.typing)) patch.typing = typingNow;
+
+    if (latest.status === 'rejected') {
+      // Retried on the next check; say so instead of failing silently.
+      if (!state.connectionLost) patch.connectionLost = true;
+    } else {
+      if (state.connectionLost) patch.connectionLost = false;
+      const known = new Set(state.messages.map((message) => message._id));
+      const fresh = (latest.value ?? []).filter((m) => !known.has(m._id));
+      if (fresh.length > 0) {
+        patch.messages = [...state.messages, ...fresh].sort(
           (a, b) => time(a) - time(b)
-        ),
-      }));
-    } catch {
-      // A failed background check is retried on the next one.
+        );
+      }
     }
+
+    // One update, so a reply and the end of its typing dots appear together.
+    if (Object.keys(patch).length > 0) set(patch);
   },
+
+  resetLiveState: () => set({ typing: [], connectionLost: false }),
 
   sendMessage: async (data: CreateMessageRequest) => {
     set({ loading: true, error: null });

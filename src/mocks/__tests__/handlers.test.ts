@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Message } from '@/types/chat';
-import { filterMessages, visibleMessages } from '../handlers';
+import { filterMessages, typingAuthors, visibleMessages } from '../handlers';
 import { createMockMessage } from '../data/messages';
 
 const message = (id: string, createdAt: string): Message => ({
@@ -38,6 +38,19 @@ describe('mock API: filterMessages', () => {
 
     const before = new URLSearchParams({ before: '2026-01-03T10:00:00Z' });
     expect(ids(filterMessages(messages, before))).toEqual(['a', 'b']);
+  });
+});
+
+describe('mock API: typingAuthors', () => {
+  it('names the authors of replies that are not shown yet, each once', () => {
+    const now = new Date('2026-01-02T12:00:00Z').getTime();
+    const pending = [
+      ...messages,
+      { ...message('d', '2026-01-04T10:00:00Z'), author: 'Nina' },
+      { ...message('e', '2026-01-05T10:00:00Z'), author: 'Nina' },
+    ];
+    expect(typingAuthors(pending, now)).toEqual(['Tester', 'Nina']);
+    expect(typingAuthors(messages, Date.parse('2026-02-01'))).toEqual([]);
   });
 });
 

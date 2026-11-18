@@ -63,4 +63,32 @@ export const MESSAGE_STYLES = {
     fontSize: '0.875rem',
     color: '#666',
   },
+  typingBubble: {
+    px: 2,
+    py: 1.5,
+    bgcolor: '#e8f4f8',
+    color: '#333',
+    alignSelf: 'flex-start' as const,
+    borderRadius: 1,
+  },
+  typingDots: {
+    display: 'flex',
+    gap: 0.75,
+    alignItems: 'center',
+    height: 16,
+    '& > span': {
+      width: 8,
+      height: 8,
+      borderRadius: '50%',
+      bgcolor: '#4a6b78',
+    },
+  },
+  visuallyHidden: {
+    position: 'absolute' as const,
+    width: 1,
+    height: 1,
+    overflow: 'hidden',
+    clip: 'rect(0 0 0 0)',
+    whiteSpace: 'nowrap' as const,
+  },
 } as const;

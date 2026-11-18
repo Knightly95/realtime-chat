@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box } from '@mui/material';
+import { Alert, Box } from '@mui/material';
 import type { CreateMessageRequest } from '@/types/chat';
 import { MessageList } from '@/components/MessageList';
 import { MessageInput } from '@/components/MessageInput';
@@ -22,6 +22,9 @@ export default function ChatPage() {
   const messages = useMessageStore((state) => state.messages);
   const fetchMessages = useMessageStore((state) => state.fetchMessages);
   const fetchNewMessages = useMessageStore((state) => state.fetchNewMessages);
+  const resetLiveState = useMessageStore((state) => state.resetLiveState);
+  const typing = useMessageStore((state) => state.typing);
+  const connectionLost = useMessageStore((state) => state.connectionLost);
   const sendMessage = useMessageStore((state) => state.sendMessage);
 
   useEffect(() => {
@@ -31,20 +34,26 @@ export default function ChatPage() {
   // Live updates: the API has no push channel, so check for new messages
   // every few seconds. Skip the check while the tab is hidden, and catch up
   // as soon as it is shown again.
+  const checkNow = useCallback(() => {
+    if (document.visibilityState === 'visible') fetchNewMessages();
+  }, [fetchNewMessages]);
+
   useEffect(() => {
     if (!liveUpdates) return;
 
-    const check = () => {
-      if (document.visibilityState === 'visible') fetchNewMessages();
-    };
-    const interval = setInterval(check, WEBSOCKET_CONFIG.POLLING_INTERVAL_MS);
-    document.addEventListener('visibilitychange', check);
+    const interval = setInterval(
+      checkNow,
+      WEBSOCKET_CONFIG.POLLING_INTERVAL_MS
+    );
+    document.addEventListener('visibilitychange', checkNow);
 
     return () => {
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', check);
+      document.removeEventListener('visibilitychange', checkNow);
+      // Paused: don't leave typing dots or a connection warning behind.
+      resetLiveState();
     };
-  }, [liveUpdates, fetchNewMessages]);
+  }, [liveUpdates, checkNow, resetLiveState]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -52,9 +61,10 @@ export default function ChatPage() {
     });
   }, []);
 
+  // Keep the newest message, or the typing dots, in view.
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, typing, scrollToBottom]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim()) {
@@ -68,7 +78,10 @@ export default function ChatPage() {
 
     await sendMessage(messageData);
     setInputValue('');
-  }, [inputValue, currentUser, sendMessage]);
+    // Check straight away, so a teammate's typing dots show without waiting
+    // for the next scheduled check.
+    if (liveUpdates) checkNow();
+  }, [inputValue, currentUser, sendMessage, liveUpdates, checkNow]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -90,7 +103,13 @@ export default function ChatPage() {
         messages={messages}
         scrollRef={messagesEndRef}
         currentUser={currentUser}
+        typing={typing}
       />
+      {connectionLost && (
+        <Alert severity="warning" sx={{ borderRadius: 0 }}>
+          Can't reach the chat right now. Retrying…
+        </Alert>
+      )}
       <MessageInput
         value={inputValue}
         onChange={setInputValue}

@@ -13,13 +13,14 @@ A small group-chat client built with React and TypeScript. It focuses on a clean
 
 [![Chat page: a sent message on the right and a reply from a simulated teammate arriving below it](docs/screenshots/chat.png)](docs/screenshots/chat.png)
 
-Your messages are on the right. A few seconds after you send one, a simulated teammate's reply arrives without a reload.
+Your messages are on the right. When you send one, a simulated teammate starts typing (three dots), and a few seconds later the reply arrives without a reload.
 
 ## Features
 
 - **Message list and composer:** your own messages are aligned and styled differently from other people's, with timestamps. Enter sends; Shift+Enter adds a new line.
-- **Live updates:** the chat checks for new messages every 2 seconds and adds only the new ones, so the list doesn't jump while you read. Checks pause while the tab is hidden and catch up when it is shown again. The Wi-Fi button in the top-right corner pauses and resumes them. Polling stands in for a WebSocket subscription, which the original API did not offer.
-- **Simulated teammates:** in the demo, another participant replies with a canned line 1.5 to 4 seconds after you send a message. There is no AI: the replies are picked at random by the in-browser mock API.
+- **Live updates:** the chat checks for new messages every second, and straight after you send one, and adds only the new ones, so the list doesn't jump while you read. Checks pause while the tab is hidden and catch up when it is shown again. The Wi-Fi button in the top-right corner pauses and resumes them. If a check fails, a warning says the chat is retrying instead of failing silently. Polling stands in for a WebSocket subscription, which the original API did not offer.
+- **Typing indicator:** three dots show who is writing a reply, from a `GET /typing` endpoint; screen readers hear "Nina is typing". A backend without that endpoint simply shows no dots.
+- **Simulated teammates:** in the demo, another participant types for 2 to 4.5 seconds after you send a message, then replies with a canned line. There is no AI: the replies are picked at random by the in-browser mock API.
 - **Persistent demo data:** messages are saved in your browser, so they survive a reload and are shared between tabs.
 - **Error handling:** failed requests show a clear message and never crash the page.
 
@@ -59,7 +60,8 @@ The app uses two endpoints:
 
 By default, requests are answered inside the browser by [MSW](https://mswjs.io/). The code is in [`src/mocks`](src/mocks):
 
-- `handlers.ts`: the two endpoints, input validation and the simulated teammate replies
+- `handlers.ts`: the endpoints (messages and typing), input validation and the simulated teammate replies
+- `browser.ts`: starts the mock service worker, and turns it back on when the browser has restarted it (browsers stop idle service workers, and a restarted MSW worker forgets the tab, so the chat would stop updating)
 - `store.ts`: persistence in `localStorage`
 - `data/messages.ts`: the seed conversation
 
@@ -110,7 +112,7 @@ Since November 2026 I maintain this repo with an AI coding agent (Claude Code). 
 
 - The agent follows [AGENTS.md](AGENTS.md): commands, conventions and what it must not do.
 - Every change goes through a pull request. I read the diff and merge it myself; nothing is pushed straight to `main`.
-- CI runs lint, the 66 unit and integration tests and the 10 Playwright tests on every pull request, plus the Lighthouse and bundle-size checks.
+- CI runs lint, the 82 unit and integration tests and the 11 Playwright tests on every pull request, plus the Lighthouse and bundle-size checks.
 
 **Where it needed correcting**
 

@@ -12,6 +12,8 @@ export const API_CONFIG = {
   },
   ENDPOINTS: {
     MESSAGES: '/messages',
+    /** Who is writing a message right now: `{ typing: string[] }`. */
+    TYPING: '/typing',
   },
   DEFAULTS: {
     MESSAGE_LIMIT: 50,
