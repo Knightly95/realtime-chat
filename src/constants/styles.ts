@@ -52,7 +52,9 @@ export const MESSAGE_STYLES = {
   },
   timestamp: {
     mt: 1,
-    opacity: 0.6,
+    // A solid grey instead of opacity, so the small text keeps a WCAG AA
+    // contrast ratio (about 6.6:1) on both bubble colours.
+    color: '#555',
     fontSize: '0.75rem',
   },
   author: {

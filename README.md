@@ -83,6 +83,15 @@ When `VITE_API_URL` is set, the mock API is not started.
 
 CI measures line coverage of the unit and integration tests on every push to `main` and publishes the number shown in the badge above.
 
+### Quality checks
+
+A second CI job builds the app and checks what visitors get:
+
+- **Lighthouse** (mobile settings): the build fails if accessibility drops below 95 or best practices below 90; performance and SEO are reported. Last run: performance 96, accessibility 100, best practices 100, SEO 100.
+- **Bundle budget:** the JavaScript sent to the browser must stay under 260 kB gzip (today: 246.9 kB). To check locally: `npm run build && node scripts/bundle-budget.mjs dist 260`.
+
+The Lighthouse report is attached to each CI run.
+
 ## Deployment
 
 Every push to `main` is linted, tested (unit and end-to-end), built and deployed to GitHub Pages by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
