@@ -10,6 +10,19 @@ describe('messageService', () => {
     vi.clearAllMocks();
   });
 
+  describe('getTyping', () => {
+    it('returns the names from the typing endpoint', async () => {
+      vi.mocked(api.get).mockResolvedValue({ typing: ['Nina'] });
+      expect(await messageService.getTyping()).toEqual(['Nina']);
+      expect(api.get).toHaveBeenCalledWith('/typing');
+    });
+
+    it('returns nobody for an unexpected answer', async () => {
+      vi.mocked(api.get).mockResolvedValue({});
+      expect(await messageService.getTyping()).toEqual([]);
+    });
+  });
+
   describe('getMessages', () => {
     it('fetches messages without params', async () => {
       const mockMessages: Message[] = [

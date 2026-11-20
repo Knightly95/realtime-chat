@@ -4,17 +4,23 @@ import type { Message } from '@/types/chat';
 import { formatTime } from '@/utils/message';
 import { CHAT_CONSTANTS } from '@/constants/chat';
 import { LAYOUT_STYLES, MESSAGE_STYLES } from '@/constants/styles';
+import { TypingIndicator } from './TypingIndicator';
 
 interface MessageListProps {
   messages: Message[];
   scrollRef: React.RefObject<HTMLDivElement | null>;
   currentUser: string;
+  /** People writing a message right now; shown as typing dots. */
+  typing?: string[];
 }
+
+const NOBODY: string[] = [];
 
 function MessageListComponent({
   messages,
   scrollRef,
   currentUser,
+  typing = NOBODY,
 }: MessageListProps) {
   const hasMessages = messages.length > 0;
 
@@ -30,6 +36,8 @@ function MessageListComponent({
             currentUser={currentUser}
           />
         ))}
+
+      <TypingIndicator names={typing} />
 
       <div ref={scrollRef} />
     </Box>

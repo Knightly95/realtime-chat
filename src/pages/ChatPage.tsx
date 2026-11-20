@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box } from '@mui/material';
+import { Alert, Box } from '@mui/material';
 import type { CreateMessageRequest } from '@/types/chat';
 import { MessageList } from '@/components/MessageList';
 import { MessageInput } from '@/components/MessageInput';
@@ -15,27 +15,45 @@ import { getCurrentUser } from '@/utils/message';
 
 export default function ChatPage() {
   const [inputValue, setInputValue] = useState('');
-  const [simulateWebSocket, setSimulateWebSocket] = useState(false);
+  // On by default: replies should appear without a reload.
+  const [liveUpdates, setLiveUpdates] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = getCurrentUser();
   const messages = useMessageStore((state) => state.messages);
   const fetchMessages = useMessageStore((state) => state.fetchMessages);
+  const fetchNewMessages = useMessageStore((state) => state.fetchNewMessages);
+  const resetLiveState = useMessageStore((state) => state.resetLiveState);
+  const typing = useMessageStore((state) => state.typing);
+  const connectionLost = useMessageStore((state) => state.connectionLost);
   const sendMessage = useMessageStore((state) => state.sendMessage);
 
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Simulate WebSocket with polling
+  // Live updates: the API has no push channel, so check for new messages
+  // every few seconds. Skip the check while the tab is hidden, and catch up
+  // as soon as it is shown again.
+  const checkNow = useCallback(() => {
+    if (document.visibilityState === 'visible') fetchNewMessages();
+  }, [fetchNewMessages]);
+
   useEffect(() => {
-    if (!simulateWebSocket) return;
+    if (!liveUpdates) return;
 
-    const interval = setInterval(() => {
-      fetchMessages();
-    }, WEBSOCKET_CONFIG.POLLING_INTERVAL_MS);
+    const interval = setInterval(
+      checkNow,
+      WEBSOCKET_CONFIG.POLLING_INTERVAL_MS
+    );
+    document.addEventListener('visibilitychange', checkNow);
 
-    return () => clearInterval(interval);
-  }, [simulateWebSocket, fetchMessages]);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', checkNow);
+      // Paused: don't leave typing dots or a connection warning behind.
+      resetLiveState();
+    };
+  }, [liveUpdates, checkNow, resetLiveState]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -43,9 +61,10 @@ export default function ChatPage() {
     });
   }, []);
 
+  // Keep the newest message, or the typing dots, in view.
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [messages, typing, scrollToBottom]);
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim()) {
@@ -59,7 +78,10 @@ export default function ChatPage() {
 
     await sendMessage(messageData);
     setInputValue('');
-  }, [inputValue, currentUser, sendMessage]);
+    // Check straight away, so a teammate's typing dots show without waiting
+    // for the next scheduled check.
+    if (liveUpdates) checkNow();
+  }, [inputValue, currentUser, sendMessage, liveUpdates, checkNow]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -74,14 +96,20 @@ export default function ChatPage() {
   return (
     <Box sx={LAYOUT_STYLES.container}>
       <WebSocketToggle
-        enabled={simulateWebSocket}
-        onToggle={() => setSimulateWebSocket(!simulateWebSocket)}
+        enabled={liveUpdates}
+        onToggle={() => setLiveUpdates(!liveUpdates)}
       />
       <MessageList
         messages={messages}
         scrollRef={messagesEndRef}
         currentUser={currentUser}
+        typing={typing}
       />
+      {connectionLost && (
+        <Alert severity="warning" sx={{ borderRadius: 0 }}>
+          Can't reach the chat right now. Retrying…
+        </Alert>
+      )}
       <MessageInput
         value={inputValue}
         onChange={setInputValue}

@@ -14,12 +14,14 @@ function WebSocketToggleComponent({ enabled, onToggle }: WebSocketToggleProps) {
     <Tooltip
       title={
         enabled
-          ? 'Disable auto-refresh'
-          : 'Enable auto-refresh (simulates WebSocket)'
+          ? 'Live updates are on. Click to pause them.'
+          : 'Live updates are paused. Click to resume them.'
       }
     >
       <IconButton
         onClick={onToggle}
+        aria-label={enabled ? 'Pause live updates' : 'Resume live updates'}
+        aria-pressed={enabled}
         sx={{
           position: 'absolute',
           top: POSITION_CONSTANTS.TOGGLE_TOP,

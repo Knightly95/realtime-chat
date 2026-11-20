@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import ChatPage from '../ChatPage';
@@ -12,14 +12,23 @@ const createMockStore = (
   messages,
   loading: false,
   error: null,
+  typing: [],
+  connectionLost: false,
+  ...liveState,
   setMessages: vi.fn(),
   addMessage: vi.fn(),
   clearMessages: vi.fn(),
   setError: vi.fn(),
   setLoading: vi.fn(),
   fetchMessages: vi.fn(),
+  fetchNewMessages,
+  resetLiveState,
   sendMessage: vi.fn(),
 });
+
+const fetchNewMessages = vi.fn();
+const resetLiveState = vi.fn();
+let liveState: Partial<MessageStore> = {};
 
 vi.mock('@/stores/messageStore', () => ({
   useMessageStore: (selector: (state: MessageStore) => unknown) => {
@@ -46,6 +55,84 @@ const renderChatPage = () => {
 describe('ChatPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    liveState = {};
+  });
+
+  describe('live updates', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('checks for new messages every second without being switched on', () => {
+      renderChatPage();
+      expect(fetchNewMessages).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1000);
+      expect(fetchNewMessages).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(2000);
+      expect(fetchNewMessages).toHaveBeenCalledTimes(3);
+    });
+
+    it('clears typing dots and warnings when paused', () => {
+      renderChatPage();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Pause live updates' })
+      );
+      expect(resetLiveState).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops checking when paused', () => {
+      renderChatPage();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Pause live updates' })
+      );
+
+      vi.advanceTimersByTime(6000);
+      expect(fetchNewMessages).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: 'Resume live updates' })
+      ).toBeTruthy();
+    });
+
+    it('skips checks while the tab is hidden', () => {
+      const visibility = vi.spyOn(document, 'visibilityState', 'get');
+      visibility.mockReturnValue('hidden');
+      renderChatPage();
+
+      vi.advanceTimersByTime(6000);
+      expect(fetchNewMessages).not.toHaveBeenCalled();
+
+      visibility.mockReturnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(fetchNewMessages).toHaveBeenCalledTimes(1);
+      visibility.mockRestore();
+    });
+  });
+
+  it('checks straight away after sending, so typing dots show at once', async () => {
+    const user = userEvent.setup();
+    renderChatPage();
+
+    await user.type(screen.getByPlaceholderText('Type your message...'), 'Hi');
+    await user.click(screen.getByRole('button', { name: /send message/i }));
+
+    await waitFor(() => expect(fetchNewMessages).toHaveBeenCalledTimes(1));
+  });
+
+  it('shows typing dots while a teammate writes', () => {
+    liveState = { typing: ['Nina'] };
+    renderChatPage();
+
+    expect(screen.getByTestId('typing-indicator')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Nina is typing');
+  });
+
+  it('says so when the chat cannot be reached', () => {
+    liveState = { connectionLost: true };
+    renderChatPage();
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      "Can't reach the chat right now"
+    );
   });
 
   it('renders message list and input', () => {

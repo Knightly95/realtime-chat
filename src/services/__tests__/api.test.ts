@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { api } from '../api';
 
+// A real backend; api.mockRecovery.test.ts covers the in-browser mock API.
+vi.mock('@/constants/api', async (importOriginal) => {
+  const { API_CONFIG } =
+    await importOriginal<typeof import('@/constants/api')>();
+  return { API_CONFIG: { ...API_CONFIG, USE_MOCK_API: false } };
+});
+
 globalThis.fetch = vi.fn();
 
 describe('api', () => {

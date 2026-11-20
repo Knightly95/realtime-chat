@@ -4,7 +4,7 @@ Instructions for AI coding agents working in this repository. People follow the 
 
 ## Project
 
-A small group-chat client built with React 19, TypeScript and Vite. It lists messages, sends new ones and can poll for updates. By default the two API endpoints are answered inside the browser by a mock API (MSW) in `src/mocks`, so the app runs with no backend. Setting `VITE_API_URL` points it at a real one.
+A small group-chat client built with React 19, TypeScript and Vite. It lists messages, sends new ones, checks for new ones every second and shows typing dots. By default the API (`/messages` and `/typing`) is answered inside the browser by a mock API (MSW) in `src/mocks`, so the app runs with no backend. Browsers stop idle service workers and a restarted MSW worker forgets the tab, so `src/services/api.ts` turns mocking back on (`reactivateMockApi` in `src/mocks/browser.ts`) and retries once when a mock request gets a non-JSON answer. Setting `VITE_API_URL` points it at a real one.
 
 ## Commands
 
